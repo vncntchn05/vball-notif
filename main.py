@@ -33,7 +33,7 @@ level = "under"
 sess = "1239"
 subject = "MATH"
 cournum = "145"
-classnum = "6025"
+classnum = "6506"
 
 p = spotcheck(level, sess, subject, cournum, classnum)[0]
 
