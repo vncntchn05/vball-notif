@@ -1,5 +1,4 @@
 import smtplib, ssl
-#from helper import spotcheck
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -72,7 +71,7 @@ level = "under"
 sess = "1239"
 subject = "MATH"
 cournum = "145"
-classnum = "6506"
+classnum = "6025"
 
 p = spotcheck(level, sess, subject, cournum, classnum)[0]
 
