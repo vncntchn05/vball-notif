@@ -75,7 +75,7 @@ classnum = "3761"
 
 p = spotcheck(level, sess, subject, cournum, classnum)[0]
 
-if p:
+if not p:
     text = spotcheck(level, sess, subject, cournum, classnum)[1]
 
     part1 = MIMEText(text, "plain")
