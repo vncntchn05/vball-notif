@@ -39,7 +39,7 @@ def spotcheck(level, sess, subject, cournum, classnum):
                     datalist.append(t)
 
         wanti = datalist.index(classnum)
-        if datalist[wanti + 5] < datalist[wanti + 6]:
+        if datalist[wanti + 5] > datalist[wanti + 6]:
             return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
         return False, ""
     return False, ""
