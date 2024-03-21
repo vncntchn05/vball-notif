@@ -39,7 +39,7 @@ def spotcheck(level, sess, subject, cournum, classnum):
                     datalist.append(t)
 
         wanti = datalist.index(classnum)
-        if datalist[wanti + 7] < datalist[wanti + 6]:
+        if datalist[wanti + 5] < datalist[wanti + 6]:
             return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
         return False, ""
     return False, ""
@@ -75,7 +75,7 @@ classnum = "3761"
 
 p = spotcheck(level, sess, subject, cournum, classnum)[0]
 
-if not p:
+if p:
     text = spotcheck(level, sess, subject, cournum, classnum)[1]
 
     part1 = MIMEText(text, "plain")
