@@ -74,7 +74,7 @@ cournum = "239"
 classnum = "3761"
 
 p = spotcheck(level, sess, subject, cournum, classnum)[0]
-q = spotcheck(level, sess, subject, cournum, classnum + 1)[0]
+q = spotcheck(level, sess, subject, cournum, "3762")[0]
 
 if p:
     text = spotcheck(level, sess, subject, cournum, classnum)[1]
@@ -88,7 +88,7 @@ if p:
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message.as_string())
 elif q:
-    text = spotcheck(level, sess, subject, cournum, classnum + 1)[1]
+    text = spotcheck(level, sess, subject, cournum, "3762")[1]
 
     part1 = MIMEText(text, "plain")
 
