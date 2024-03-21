@@ -68,23 +68,23 @@ message["From"] = sender_email
 message["To"] = receiver_email
 
 level = "under"
-sess = "1239"
+sess = "1245"
 subject = "MATH"
-cournum = "145"
-classnum = "6025"
+cournum = "239"
+classnum = "3761"
 
 p = spotcheck(level, sess, subject, cournum, classnum)[0]
 
-#if p:
-#    text = spotcheck(level, sess, subject, cournum, classnum)[1]
+if p:
+    text = spotcheck(level, sess, subject, cournum, classnum)[1]
 
-#    part1 = MIMEText(text, "plain")
+    part1 = MIMEText(text, "plain")
 
-#    message.attach(part1)
+    message.attach(part1)
 
-#    context = ssl.create_default_context()
-#    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-#        server.login(sender_email, password)
-#        server.sendmail(sender_email, receiver_email, message.as_string())
-#    #print("sent email, " + text)
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+    #print("sent email, " + text)
 
