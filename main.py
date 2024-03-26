@@ -112,6 +112,40 @@ def spotcheck3(level, sess, subject, cournum, classnum):
         return False, ""
     return False, ""
 
+def spotcheck4(level, sess, subject, cournum, classnum):
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+
+    data = {
+        'level': level,
+        'sess': sess,
+        'subject': subject,
+        'cournum': cournum,
+    }
+
+    response = requests.post('https://classes.uwaterloo.ca/cgi-bin/cgiwrap/infocour/salook.pl', headers=headers, data=data, verify=False)
+
+    if response != None:
+        html = "" + response.text
+
+        soup = BeautifulSoup(html, 'html.parser')
+
+        datalist = []
+
+        for data in soup.find_all('td'):
+            if data.string is not None:
+                t = re.sub('[^0-9a-zA-Z]+', '', data.string)
+                if t != '':
+                    datalist.append(t)
+
+        wanti = datalist.index(classnum)
+        print(datalist)
+        if int(datalist[wanti + 4]) > int(datalist[wanti + 5]):
+            return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
+        return False, ""
+    return False, ""
+
 port = 465
 smtp_server = "smtp.gmail.com"
 
@@ -144,8 +178,10 @@ p = spotcheck(level, sess, subject, cournum, classnum)[0]
 q = spotcheck(level, sess, subject, cournum, "3762")[0]
 r = spotcheck2(level, sess, subject, cournum, "3868")[0]
 s = spotcheck3(level, sess, subject, cournum, "3887")[0]
+t1 = spotcheck4(level, sess, subject, cournum, "3767")[0]
+t2 = spotcheck4(level, sess, subject, cournum, "3869")[0]
 
-if p:
+if p and (t1 or t2):
     text = spotcheck(level, sess, subject, cournum, classnum)[1]
 
     part1 = MIMEText(text, "plain")
@@ -156,7 +192,7 @@ if p:
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message.as_string())
-if q:
+if q and (t1 or t2):
     text = spotcheck(level, sess, subject, cournum, "3762")[1]
 
     part1 = MIMEText(text, "plain")
@@ -167,7 +203,7 @@ if q:
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message.as_string())
-if r:
+if r and (t1 or t2):
     text = spotcheck2(level, sess, subject, cournum, "3868")[1]
 
     part1 = MIMEText(text, "plain")
@@ -178,7 +214,7 @@ if r:
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message.as_string())
-if s:
+if s and (t1 or t2):
     text = spotcheck3(level, sess, subject, cournum, "3887")[1]
 
     part1 = MIMEText(text, "plain")
