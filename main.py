@@ -39,11 +39,78 @@ def spotcheck(level, sess, subject, cournum, classnum):
                     datalist.append(t)
 
         wanti = datalist.index(classnum)
-        if datalist[wanti + 5] > datalist[wanti + 6]:
+        if int(datalist[wanti + 5]) > int(datalist[wanti + 6]):
             return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
         return False, ""
     return False, ""
 
+def spotcheck2(level, sess, subject, cournum, classnum):
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+
+    data = {
+        'level': level,
+        'sess': sess,
+        'subject': subject,
+        'cournum': cournum,
+    }
+
+    response = requests.post('https://classes.uwaterloo.ca/cgi-bin/cgiwrap/infocour/salook.pl', headers=headers, data=data, verify=False)
+
+    if response != None:
+        html = "" + response.text
+
+        soup = BeautifulSoup(html, 'html.parser')
+
+        datalist = []
+
+        for data in soup.find_all('td'):
+            if data.string is not None:
+                t = re.sub('[^0-9a-zA-Z]+', '', data.string)
+                if t != '':
+                    datalist.append(t)
+
+        wanti = datalist.index(classnum)
+        #print(int(datalist[wanti + 6]) + int(datalist[wanti + 10]) - int(datalist[wanti + 11]))
+        if int(datalist[wanti + 5]) > int(datalist[wanti + 6]) + int(datalist[wanti + 10]) - int(datalist[wanti + 11]):
+            return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
+        return False, ""
+    return False, ""
+
+def spotcheck3(level, sess, subject, cournum, classnum):
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+
+    data = {
+        'level': level,
+        'sess': sess,
+        'subject': subject,
+        'cournum': cournum,
+    }
+
+    response = requests.post('https://classes.uwaterloo.ca/cgi-bin/cgiwrap/infocour/salook.pl', headers=headers, data=data, verify=False)
+
+    if response != None:
+        html = "" + response.text
+
+        soup = BeautifulSoup(html, 'html.parser')
+
+        datalist = []
+
+        for data in soup.find_all('td'):
+            if data.string is not None:
+                t = re.sub('[^0-9a-zA-Z]+', '', data.string)
+                if t != '':
+                    datalist.append(t)
+
+        wanti = datalist.index(classnum)
+        #print(int(datalist[wanti + 7]) + int(datalist[wanti + 11]) - int(datalist[wanti + 12]))
+        if int(datalist[wanti + 6]) > int(datalist[wanti + 7]) + int(datalist[wanti + 11]) - int(datalist[wanti + 12]):
+            return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
+        return False, ""
+    return False, ""
 
 port = 465
 smtp_server = "smtp.gmail.com"
@@ -75,6 +142,8 @@ classnum = "3761"
 
 p = spotcheck(level, sess, subject, cournum, classnum)[0]
 q = spotcheck(level, sess, subject, cournum, "3762")[0]
+r = spotcheck2(level, sess, subject, cournum, "3868")[0]
+s = spotcheck3(level, sess, subject, cournum, "3887")[0]
 
 if p:
     text = spotcheck(level, sess, subject, cournum, classnum)[1]
@@ -87,8 +156,30 @@ if p:
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message.as_string())
-elif q:
+if q:
     text = spotcheck(level, sess, subject, cournum, "3762")[1]
+
+    part1 = MIMEText(text, "plain")
+
+    message.attach(part1)
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+if r:
+    text = spotcheck2(level, sess, subject, cournum, "3868")[1]
+
+    part1 = MIMEText(text, "plain")
+
+    message.attach(part1)
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+if s:
+    text = spotcheck3(level, sess, subject, cournum, "3887")[1]
 
     part1 = MIMEText(text, "plain")
 
