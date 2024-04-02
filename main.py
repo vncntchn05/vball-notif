@@ -191,36 +191,3 @@ if p and (t1 or t2):
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message.as_string())
-if q and (t1 or t2):
-    text = spotcheck(level, sess, subject, cournum, "3762")[1]
-
-    part1 = MIMEText(text, "plain")
-
-    message.attach(part1)
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-if r and (t1 or t2):
-    text = spotcheck2(level, sess, subject, cournum, "3868")[1]
-
-    part1 = MIMEText(text, "plain")
-
-    message.attach(part1)
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-if s:
-    text = spotcheck3(level, sess, subject, cournum, "3887")[1]
-
-    part1 = MIMEText(text, "plain")
-
-    message.attach(part1)
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
