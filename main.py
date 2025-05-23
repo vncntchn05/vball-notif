@@ -1,3 +1,13 @@
+import os
+from os.path import join, dirname
+from dotenv import load_dotenv
+
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+UW_USERNAME = os.getenv("UW_USERNAME")
+UW_PASSWORD = os.getenv("UW_PASSWORD")
+
 import smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -6,13 +16,44 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
-import requests
-from bs4 import BeautifulSoup
-import re
-
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 from datetime import datetime
 import time
+
+def login_to_warrior(page, username: str, password: str) -> bool:
+    """
+    Logs into the Warrior Recreation website.
+    
+    Args:
+        page: Playwright page object
+        username: Your UW username
+        password: Your UW password
+    
+    Returns:
+        bool: True if login successful, False otherwise
+    """
+    try:
+        page.goto("https://warrior.uwaterloo.ca", timeout=10000)
+        login_button = page.locator('button#loginLinkBtn.TopBarButtonColor.LoginPartialLinks.btn.btn-link')
+
+        if login_button.count() > 0:
+            # Go to login page
+            login_button.click()
+            page.locator('button.btn-sign-in[title="WATIAM USERS"]').click()
+
+            # Fill and submit login form
+            page.fill('#userNameInput', username)
+            page.locator('#nextButton.submit.nextButton').click()
+            page.fill("#passwordInput", password)
+            page.locator('#submitButton.submit.modifiedSignIn').click()
+            
+            # Wait for login to complete (check for a post-login element)
+            page.wait_for_selector('span.Menu-IconName:has-text("Club Memberships and Sessions")', timeout=5000)
+            return True
+        
+    except Exception as e:
+        print(f"Login failed: {e}")
+        return False
 
 def time_string_to_int(time_str: str) -> int:
     """
@@ -30,7 +71,7 @@ def time_string_to_int(time_str: str) -> int:
 
 def click_button_by_date(page, date: datetime):
     # Format the datetime to match "May 21, 2025"
-    formatted_date = date.strftime("%B %-d, %Y")  # On Linux/macOS
+    formatted_date = date.strftime("%B %d, %Y").replace(" 0", " ")
     # For Windows, use: formatted_date = date.strftime("%B %#d, %Y")
 
     # Wait for and click the button
@@ -55,19 +96,21 @@ def is_spot_available(target_date: datetime, target_start_time: str, max_retries
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_page()
 
+                login_to_warrior(page, UW_USERNAME, UW_PASSWORD)
+                
                 # Navigate to program page
                 url = "https://warrior.uwaterloo.ca/program/GetProgramDetails?courseId=2882ad00-6e10-4b25-ac28-238a716ab8c5"
                 page.goto(url, timeout=15000)
-                
                 # Wait for calendar to load (more specific selector)
                 page.wait_for_selector("div.program-instance-card", timeout=10000)
                 
                 click_button_by_date(page, target_date)
-                print("hi")
-
+                
                 # Add slight delay for stability
                 time.sleep(1)
                 
+                # page.screenshot(path="screenshot.png", full_page=True)
+
                 # Find matching session
                 cards = page.query_selector_all("div.program-instance-card")
                 for card in cards:
@@ -96,7 +139,7 @@ def is_spot_available(target_date: datetime, target_start_time: str, max_retries
                     except Exception as e:
                         print(f"Error parsing card: {e}")
                         continue
-                
+
                 raise ValueError(f"No session found at {target_start_time} on {target_date.strftime('%Y-%m-%d')}")
                 
             except PlaywrightTimeoutError:
@@ -119,169 +162,34 @@ def is_spot_available(target_date: datetime, target_start_time: str, max_retries
 # Example usage
 if __name__ == "__main__":
     # Check if spots available for April 4, 2025 at 3:01 PM, datetime(year, month, day)
-    date = datetime(2025, 5, 21)
+    date = datetime(2025, 5, 29)
     start_time = "8:30 PM"
+    send = False
     
     if is_spot_available(date, start_time):
         print(f"Spots available for {start_time} on {date.strftime('%Y-%m-%d')}!")
+        if send:
+            port = 465
+            smtp_server = "smtp.gmail.com"
+            sender_email = "classesuwaterloobot@gmail.com"
+            receiver_email = "vncntchn05@gmail.com"
+            password = "lxtikuxorkjzcmqf"
+
+            message = MIMEMultipart("alternative")
+            message["Subject"] = "Serve Spot Update"
+            message["From"] = sender_email
+            message["To"] = receiver_email
+
+            text = ""
+
+            part1 = MIMEText(text, "plain")
+
+            message.attach(part1)
+
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+                server.login(sender_email, password)
+                server.sendmail(sender_email, receiver_email, message.as_string())
+
     else:
         print(f"No spots available for {start_time} on {date.strftime('%Y-%m-%d')}")
-
-    port = 465
-    smtp_server = "smtp.gmail.com"
-    sender_email = "classesuwaterloobot@gmail.com"
-    receiver_email = "vncntchn05@gmail.com"
-    password = "lxtikuxorkjzcmqf"
-
-    message = MIMEMultipart("alternative")
-    message["Subject"] = "Serve Spot Update"
-    message["From"] = sender_email
-    message["To"] = receiver_email
-
-    text = ""
-
-    part1 = MIMEText(text, "plain")
-
-    message.attach(part1)
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-
-'''
-def spotcheck(level, sess, subject, cournum, classnum):
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-    }
-
-    data = {
-        'level': level,
-        'sess': sess,
-        'subject': subject,
-        'cournum': cournum,
-    }
-
-    response = requests.post('https://classes.uwaterloo.ca/cgi-bin/cgiwrap/infocour/salook.pl', headers=headers, data=data, verify=False)
-
-    if response != None:
-        html = "" + response.text
-
-        soup = BeautifulSoup(html, 'html.parser')
-
-        datalist = []
-
-        for data in soup.find_all('td'):
-            if data.string is not None:
-                t = re.sub('[^0-9a-zA-Z]+', '', data.string)
-                if t != '':
-                    datalist.append(t)
-
-        wanti = datalist.index(classnum)
-        if int(datalist[wanti + 5]) > int(datalist[wanti + 6]):
-            return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
-        return False, ""
-    return False, ""
-
-def spotcheck2(level, sess, subject, cournum, classnum):
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-    }
-
-    data = {
-        'level': level,
-        'sess': sess,
-        'subject': subject,
-        'cournum': cournum,
-    }
-
-    response = requests.post('https://classes.uwaterloo.ca/cgi-bin/cgiwrap/infocour/salook.pl', headers=headers, data=data, verify=False)
-
-    if response != None:
-        html = "" + response.text
-
-        soup = BeautifulSoup(html, 'html.parser')
-
-        datalist = []
-
-        for data in soup.find_all('td'):
-            if data.string is not None:
-                t = re.sub('[^0-9a-zA-Z]+', '', data.string)
-                if t != '':
-                    datalist.append(t)
-
-        wanti = datalist.index(classnum)
-        #print(int(datalist[wanti + 6]) + int(datalist[wanti + 10]) - int(datalist[wanti + 11]))
-        if int(datalist[wanti + 5]) > int(datalist[wanti + 6]) + int(datalist[wanti + 10]) - int(datalist[wanti + 11]):
-            return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
-        return False, ""
-    return False, ""
-
-def spotcheck3(level, sess, subject, cournum, classnum):
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-    }
-
-    data = {
-        'level': level,
-        'sess': sess,
-        'subject': subject,
-        'cournum': cournum,
-    }
-
-    response = requests.post('https://classes.uwaterloo.ca/cgi-bin/cgiwrap/infocour/salook.pl', headers=headers, data=data, verify=False)
-
-    if response != None:
-        html = "" + response.text
-
-        soup = BeautifulSoup(html, 'html.parser')
-
-        datalist = []
-
-        for data in soup.find_all('td'):
-            if data.string is not None:
-                t = re.sub('[^0-9a-zA-Z]+', '', data.string)
-                if t != '':
-                    datalist.append(t)
-
-        wanti = datalist.index(classnum)
-        #print(int(datalist[wanti + 7]) + int(datalist[wanti + 11]) - int(datalist[wanti + 12]))
-        if int(datalist[wanti + 6]) > int(datalist[wanti + 7]) + int(datalist[wanti + 11]) - int(datalist[wanti + 12]):
-            return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
-        return False, ""
-    return False, ""
-
-def spotcheck4(level, sess, subject, cournum, classnum):
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-    }
-
-    data = {
-        'level': level,
-        'sess': sess,
-        'subject': subject,
-        'cournum': cournum,
-    }
-
-    response = requests.post('https://classes.uwaterloo.ca/cgi-bin/cgiwrap/infocour/salook.pl', headers=headers, data=data, verify=False)
-
-    if response != None:
-        html = "" + response.text
-
-        soup = BeautifulSoup(html, 'html.parser')
-
-        datalist = []
-
-        for data in soup.find_all('td'):
-            if data.string is not None:
-                t = re.sub('[^0-9a-zA-Z]+', '', data.string)
-                if t != '':
-                    datalist.append(t)
-
-        wanti = datalist.index(classnum)
-        if int(datalist[wanti + 4]) > int(datalist[wanti + 5]):
-            return True, "There is an open spot for " + subject + " " + cournum + " (" + classnum + ")"
-        return False, ""
-    return False, ""
-'''
-
