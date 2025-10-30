@@ -162,9 +162,9 @@ def is_spot_available(target_date: datetime, target_start_time: str, max_retries
 # Example usage
 if __name__ == "__main__":
     # Check if spots available for April 4, 2025 at 3:01 PM, datetime(year, month, day)
-    date = datetime(2025, 5, 29)
-    start_time = "8:30 PM"
-    send = False
+    date = datetime(2025, 11, 4)
+    start_time = "9:30 PM"
+    send = True
     
     if is_spot_available(date, start_time):
         print(f"Spots available for {start_time} on {date.strftime('%Y-%m-%d')}!")
